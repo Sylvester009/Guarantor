@@ -14,26 +14,11 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  User,
-  Mail,
-  Lock,
-  ArrowRight,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { User, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-
-interface UserData {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  createdAt: string;
-}
+import { createUser } from "@/services/auth";
 
 export function SignupForm({
   className,
@@ -80,7 +65,9 @@ export function SignupForm({
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      toast.warning("Please enter a valid email address", { position: "top-center" });
+      toast.warning("Please enter a valid email address", {
+        position: "top-center",
+      });
       return false;
     }
 
@@ -91,7 +78,9 @@ export function SignupForm({
 
     // Validate password length
     if (formData.password.length < 8) {
-      toast.warning("Password must be at least 8 characters long", { position: "top-center" });
+      toast.warning("Password must be at least 8 characters long", {
+        position: "top-center",
+      });
       return false;
     }
 
@@ -111,61 +100,40 @@ export function SignupForm({
 
     // Simulate async operation
     setTimeout(() => {
-      try {
-        // Check if user already exists
-        const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+      const result = createUser(
+        formData.firstName,
+        formData.lastName,
+        formData.email,
+        formData.password,
+      );
 
-        // Check if email is already registered
-        const userExists = existingUsers.some(
-          (user: UserData) => user.email === formData.email,
-        );
-
-        if (userExists) {
-          toast.error("An account with this email already exists", { position: "top-center" });
-          setIsLoading(false);
-          return;
-        }
-
-        // Create new user
-        const newUser: UserData = {
-          id: Date.now().toString(),
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          password: formData.password, // In production, this should be hashed!
-          createdAt: new Date().toISOString(),
-        };
-
-        // Save to localStorage
-        existingUsers.push(newUser);
-        localStorage.setItem("users", JSON.stringify(existingUsers));
-
-        // Also store current user session
-        const { password, ...userWithoutPassword } = newUser;
-        localStorage.setItem(
-          "currentUser",
-          JSON.stringify(userWithoutPassword),
-        );
-
-        setSuccess(true);
-        toast.success("Account created successfully! Redirecting...", { position: "top-center" });
-        setFormData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          password: "",
+      if (!result.success) {
+        toast.error(result.message, {
+          position: "top-center",
         });
 
-        // Redirect after successful signup
-        setTimeout(() => {
-          router.push("/");
-        }, 1500);
-      } catch (err) {
-        toast.error("An error occurred during signup. Please try again."), { position: "top-center" };
-        console.error("Signup error:", err);
-      } finally {
         setIsLoading(false);
+        return;
       }
+
+      setSuccess(true);
+
+      toast.success(result.message, {
+        position: "top-center",
+      });
+
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+      });
+
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
+
+      setIsLoading(false);
     }, 1000);
   };
 
@@ -188,42 +156,42 @@ export function SignupForm({
             <FieldGroup className="gap-5">
               {/* Full Name */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="name" className="text-sm font-medium">
-                  First Name
-                </FieldLabel>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
-                  <Input
-                    id="firstName"
-                    type="text"
-                    placeholder="John"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    required
-                    disabled={isLoading || success}
-                    className="h-11 pl-9 text-base"
-                  />
-                </div>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="name" className="text-sm font-medium">
-                  Last Name
-                </FieldLabel>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
-                  <Input
-                    id="lastName"
-                    type="text"
-                    placeholder="Doe"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    required
-                    disabled={isLoading || success}
-                    className="h-11 pl-9 text-base"
-                  />
-                </div>
-              </Field>
+                <Field>
+                  <FieldLabel htmlFor="name" className="text-sm font-medium">
+                    First Name
+                  </FieldLabel>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+                    <Input
+                      id="firstName"
+                      type="text"
+                      placeholder="John"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      required
+                      disabled={isLoading || success}
+                      className="h-11 pl-9 text-base"
+                    />
+                  </div>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="name" className="text-sm font-medium">
+                    Last Name
+                  </FieldLabel>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="Doe"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      required
+                      disabled={isLoading || success}
+                      className="h-11 pl-9 text-base"
+                    />
+                  </div>
+                </Field>
               </div>
 
               {/* Email */}
@@ -280,8 +248,6 @@ export function SignupForm({
                     </button>
                   </div>
                 </Field>
-
-                
               </div>
 
               <FieldDescription className="text-xs text-muted-foreground/70">

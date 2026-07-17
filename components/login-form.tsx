@@ -19,6 +19,7 @@ import { ArrowRight, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { verifyUser } from "@/services/auth";
 
 interface UserData {
   id: string;
@@ -78,56 +79,32 @@ export function LoginForm({
 
     // Simulate async operation
     setTimeout(() => {
-      try {
-        // Get users from localStorage
-        const users = JSON.parse(localStorage.getItem("users") || "[]");
+      const result = verifyUser(formData.email, formData.password);
 
-        // Find user by email
-        const user = users.find((u: UserData) => u.email === formData.email);
-
-        if (!user) {
-          toast.error("No account found with this email", {
-            position: "top-center",
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        // Check password
-        if (user.password !== formData.password) {
-          toast.info("Incorrect password", { position: "top-center" });
-          setIsLoading(false);
-          return;
-        }
-
-        // Store current user session (without password)
-        const { password, ...userWithoutPassword } = user;
-        localStorage.setItem(
-          "currentUser",
-          JSON.stringify(userWithoutPassword),
-        );
-
-        // Clear form
-        setFormData({
-          email: "",
-          password: "",
-        });
-
-        // Redirect to dashboard
-        toast.success("Successfully logged in...", {
+      if (!result.success) {
+        toast.error(result.message, {
           position: "top-center",
         });
-        
-        router.push("/");
-      } catch (err) {
-        toast.error("An error occurred during login. Please try again.", {
-          position: "top-center",
-        });
-        console.error("Login error:", err);
-      } finally {
+
         setIsLoading(false);
+        return;
       }
-    }, 800);
+
+      toast.success(result.message, {
+        position: "top-center",
+      });
+
+      setFormData({
+        email: "",
+        password: "",
+      });
+
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
+
+      setIsLoading(false);
+    }, 1000);
   };
 
   return (
