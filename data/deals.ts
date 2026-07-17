@@ -1,6 +1,9 @@
+import { user } from "./user";
+
 export interface Deal {
     id: string;
-    name: string;
+    userId: string;
+    title: string;
     creator: string;
     description: string;
     createdAt: string;
@@ -19,7 +22,8 @@ export interface Deal {
 export const deals: Deal[] = [
     {
         id: "001",
-        name: "Software Development Agreement",
+        userId: user.id,
+        title: "Software Development Agreement",
         creator: "Sylvester",
         description: "A comprehensive software development agreement between Sylvester and TechCorp Inc. for the development of a custom enterprise software solution.",
         createdAt: "2026-01-01",
@@ -59,7 +63,8 @@ Both parties agree to maintain the confidentiality of all proprietary informatio
     },
     {
         id: "002",
-        name: "Real Estate Purchase Contract",
+        userId: user.id,
+        title: "Real Estate Purchase Contract",
         creator: "Samuel",
         description: "A real estate purchase agreement for the acquisition of commercial property located at 123 Main Street.",
         createdAt: "2026-01-01",
@@ -96,7 +101,8 @@ In the event of default by the Buyer, the earnest money deposit shall be forfeit
     },
     {
         id: "003",
-        name: "Service Level Agreement",
+        userId: user.id,
+        title: "Service Level Agreement",
         creator: "Alex",
         description: "A service level agreement between Alex and CloudServe Solutions for cloud infrastructure services.",
         createdAt: "2026-01-01",
@@ -140,7 +146,8 @@ Scheduled maintenance shall be performed during the maintenance window of 2:00 A
     },
     {
         id: "004",
-        name: "Marketing Partnership Deal",
+        userId: user.id,
+        title: "Marketing Partnership Deal",
         creator: "Chisom",
         description: "A marketing partnership agreement between Chisom and BrandBoost Agency for a 6-month collaborative campaign.",
         createdAt: "2026-01-01",
@@ -186,7 +193,8 @@ Campaign success will be measured based on:
     },
     {
         id: "005",
-        name: "Consulting Services Contract",
+        userId: user.id,
+        title: "Consulting Services Contract",
         creator: "Favour",
         description: "A 12-month consulting services agreement between Favour and Strategic Growth Partners for strategic business advisory.",
         createdAt: "2026-01-01",
@@ -226,7 +234,8 @@ All deliverables, including reports, strategies, and recommendations, shall beco
     },
     {
         id: "006",
-        name: "Joint Venture Agreement",
+        userId: user.id,
+        title: "Joint Venture Agreement",
         creator: "Ghost",
         description: "A joint venture agreement between Ghost and Innovation Labs Ltd for AI-powered solution development.",
         createdAt: "2026-01-01",
@@ -268,7 +277,8 @@ Either party may exit the joint venture upon:
     },
     {
         id: "007",
-        name: "Data Processing Agreement",
+        userId: user.id,
+        title: "Data Processing Agreement",
         creator: "9ine5tarx",
         description: "A data processing agreement between 9ine5tarx and DataSecure Inc. for GDPR-compliant data processing services.",
         createdAt: "2026-01-01",

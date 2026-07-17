@@ -9,7 +9,6 @@ import {
   Plus,
   Search,
   Sparkles,
-  UserPlus,
   Users,
 } from "lucide-react";
 import {
@@ -30,17 +29,131 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import { getUser } from "@/services/user";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createDeal } from "@/services/deal";
+import { useRouter } from "next/navigation";
+
+interface DealFormData {
+  title: string;
+  userId: string;
+  creator: string;
+  description: string;
+  deadline: string;
+  participant: string;
+}
 
 export default function Header() {
   const user = getUser();
+
+  const router = useRouter();
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState<DealFormData>({
+    title: "",
+    userId: "",
+    creator: "",
+    description: "",
+    deadline: "",
+    participant: "",
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
+
+  const addParticipant = () => {
+    if (!formData.participant.trim()) {
+      toast.error("Please enter an email address");
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(formData.participant)) {
+      toast.warning("Please enter a valid email address");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleDeal = () => {
+    if (!formData.title.trim()) {
+      toast.error("Deal title is required");
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      toast.error("Deal description is required");
+      return;
+    }
+
+    if (!formData.deadline) {
+      toast.error("Please set a deadline");
+      return;
+    }
+
+    if (!addParticipant()) {
+      return;
+    }
+
+    if (!user) {
+      toast.error("You must be logged in to create a deal");
+      return;
+    }
+
+    let userName = `${user.firstName} ${user.lastName}`;
+
+    setIsLoading(true);
+
+    const result = createDeal({
+      title: formData.title,
+      userId: user.id,
+      creator: userName,
+      description: formData.description,
+      deadline: formData.deadline,
+      counterparty: formData.participant,
+    });
+
+    if (!result.success) {
+      toast.error(result.message, {
+        position: "top-center",
+      });
+
+      setIsLoading(false);
+      return;
+    } else {
+      toast.success(result.message, {
+        position: "top-center",
+      });
+
+      setIsLoading(false);
+
+      setFormData({
+        title: "",
+        userId: "",
+        creator: "",
+        description: "",
+        deadline: "",
+        participant: "",
+      });
+
+      setTimeout(() => {
+        // Refresh page or update deal list
+        router.refresh();
+      }, 1500);
+    }
+  };
+
   return (
     <header className="flex items-center justify-between w-full bg-background/70 backdrop-blur-md px-8 py-3 mb-4 border-b border-primary/20 shadow-sm rounded-round">
       <div className="flex items-center gap-2">
@@ -91,6 +204,9 @@ export default function Header() {
                       id="title"
                       type="text"
                       placeholder="Enter deal title..."
+                      value={formData.title}
+                      onChange={handleChange}
+                      disabled={isLoading}
                       className="h-11 text-text"
                     />
                   </Field>
@@ -104,6 +220,9 @@ export default function Header() {
                     <Textarea
                       id="description"
                       placeholder="Describe the deal, its objectives, and key terms..."
+                      value={formData.description}
+                      onChange={handleChange}
+                      disabled={isLoading}
                       rows={4}
                       className="resize-none"
                     />
@@ -120,6 +239,9 @@ export default function Header() {
                       <Input
                         id="deadline"
                         type="date"
+                        value={formData.deadline}
+                        onChange={handleChange}
+                        disabled={isLoading}
                         className="h-11 pl-9 text-text"
                         min={new Date().toISOString().split("T")[0]}
                       />
@@ -129,40 +251,25 @@ export default function Header() {
                     </FieldDescription>
                   </Field>
 
-                  <div className="space-y-3">
+                  <Field className="space-y-3">
                     <FieldLabel className="text-sm font-medium">
-                      Invite Participants <span className="text-error">*</span>
+                      Invite Participant <span className="text-error">*</span>
                     </FieldLabel>
 
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <div className="flex-1 space-y-2 sm:space-y-0 sm:flex sm:gap-2">
                         <Input
+                          id="participant"
                           type="email"
                           placeholder="Email *"
+                          value={formData.participant}
+                          onChange={handleChange}
+                          disabled={isLoading}
                           className="h-11 sm:flex-1"
                         />
                       </div>
-                      <Select value="">
-                        <SelectTrigger className="h-11 px-2 py-5 sm:w-[140px]">
-                          <SelectValue placeholder="Role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="counterparty">
-                            Counterparty
-                          </SelectItem>
-                          <SelectItem value="observer">Observer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="h-11 gap-2 shrink-0"
-                      >
-                        <UserPlus className="h-4 w-4" />
-                        Add
-                      </Button>
                     </div>
-                  </div>
+                  </Field>
                 </FieldGroup>
               </div>
               <DialogFooter className="gap-2">
@@ -175,12 +282,20 @@ export default function Header() {
                 />
                 <Button
                   type="button"
+                  onClick={handleDeal}
                   className=" text-text gap-2 bg-linear-to-r from-primary/10 to-primary/40 shadow-md shadow-primary/20"
                 >
-                  <>
-                    Create Deal
-                    <Mail className="h-4 w-4" />
-                  </>
+                  {isLoading ? (
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      Create Deal
+                      <Mail className="h-4 w-4" />
+                    </>
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>

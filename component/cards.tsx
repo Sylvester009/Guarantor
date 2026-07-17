@@ -43,8 +43,10 @@ export default function Cards() {
                 <h1 className="text-3xl font-bold text-text">
                   {greetings}, {user?.firstName || "User"}
                 </h1>
-                <span className="bg-secondary/20 text-secondary text-xs px-3 py-1 rounded-full font-medium">
-                  Verified
+                <span
+                  className={`text-xs px-3 py-1 rounded-full font-medium ${user.length <= 0 ? "bg-accent/20 text-accent" : "bg-secondary/20 text-secondary"}`}
+                >
+                  {user.length <= 0 ? "Unverified" : "Verified"}
                 </span>
               </div>
               <p className="text-text/60 flex items-center gap-2">

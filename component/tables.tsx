@@ -86,7 +86,7 @@ export default function Tables() {
                   onClick={() => router.push(`/contracts/${deal.id}`)}
                 >
                   <TableCell className="font-medium text-text">
-                    {deal.name}
+                    {deal.title}
                   </TableCell>
 
                   <TableCell className="text-text/70 max-w-xs truncate">
