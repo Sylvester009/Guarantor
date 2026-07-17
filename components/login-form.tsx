@@ -15,13 +15,15 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, Mail, Lock, AlertCircle, Eye, EyeOff } from "lucide-react";
-import { useState, FormEvent } from "react";
+import { ArrowRight, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface UserData {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   createdAt: string;
@@ -34,7 +36,6 @@ export function LoginForm({
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -47,30 +48,29 @@ export function LoginForm({
       ...prev,
       [id]: value,
     }));
-    // Clear errors when user types
-    setError("");
   };
 
   // Handle form submission
   const handleSubmit = (e: any) => {
     e.preventDefault();
-    setError("");
 
     // Validate form
     if (!formData.email.trim()) {
-      setError("Email is required");
+      toast.warning("Email is required", { position: "top-center" });
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address");
+      toast.warning("Please enter a valid email address", {
+        position: "top-center",
+      });
       return;
     }
 
     if (!formData.password) {
-      setError("Password is required");
+      toast.warning("Password is required", { position: "top-center" });
       return;
     }
 
@@ -83,26 +83,29 @@ export function LoginForm({
         const users = JSON.parse(localStorage.getItem("users") || "[]");
 
         // Find user by email
-        const user = users.find(
-          (u: UserData) => u.email === formData.email
-        );
+        const user = users.find((u: UserData) => u.email === formData.email);
 
         if (!user) {
-          setError("No account found with this email");
+          toast.error("No account found with this email", {
+            position: "top-center",
+          });
           setIsLoading(false);
           return;
         }
 
         // Check password
         if (user.password !== formData.password) {
-          setError("Incorrect password");
+          toast.info("Incorrect password", { position: "top-center" });
           setIsLoading(false);
           return;
         }
 
         // Store current user session (without password)
         const { password, ...userWithoutPassword } = user;
-        localStorage.setItem("currentUser", JSON.stringify(userWithoutPassword));
+        localStorage.setItem(
+          "currentUser",
+          JSON.stringify(userWithoutPassword),
+        );
 
         // Clear form
         setFormData({
@@ -111,10 +114,15 @@ export function LoginForm({
         });
 
         // Redirect to dashboard
+        toast.success("Successfully logged in...", {
+          position: "top-center",
+        });
+        
         router.push("/");
-
       } catch (err) {
-        setError("An error occurred during login. Please try again.");
+        toast.error("An error occurred during login. Please try again.", {
+          position: "top-center",
+        });
         console.error("Login error:", err);
       } finally {
         setIsLoading(false);
@@ -136,15 +144,7 @@ export function LoginForm({
         <CardContent>
           <form onSubmit={handleSubmit}>
             <FieldGroup className="gap-5">
-              {/* Error Message */}
-              {error && (
-                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              {/* Social login */}
+              {/* login */}
               <Field className="grid grid-cols-2 gap-3">
                 <Button
                   variant="outline"
@@ -211,7 +211,10 @@ export function LoginForm({
               {/* Password */}
               <Field>
                 <div className="flex items-center justify-between">
-                  <FieldLabel htmlFor="password" className="text-sm font-medium">
+                  <FieldLabel
+                    htmlFor="password"
+                    className="text-sm font-medium"
+                  >
                     Password
                   </FieldLabel>
                   <a
@@ -269,7 +272,10 @@ export function LoginForm({
                 </Button>
                 <FieldDescription className="pt-2 text-center text-sm text-muted-foreground">
                   Don't have an account?{" "}
-                  <a href="/signup" className="font-medium text-primary hover:underline">
+                  <a
+                    href="/signup"
+                    className="font-medium text-primary hover:underline"
+                  >
                     Create one
                   </a>
                 </FieldDescription>

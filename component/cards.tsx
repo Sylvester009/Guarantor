@@ -1,14 +1,38 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Award,
-  CheckCircle,
-  Clock,
-  Target,
-  TrendingUp,
-  Users,
-} from "lucide-react";
+import { deals } from "@/data/deals";
+import { getUser } from "@/services/user";
+import { Award, CheckCircle, Clock, Target, TrendingUp } from "lucide-react";
+
+function getGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour >= 5 && hour < 12) {
+    return "Good Morning";
+  }
+
+  if (hour >= 12 && hour < 17) {
+    return "Good Afternoon";
+  }
+
+  if (hour >= 17 && hour < 21) {
+    return "Good Evening";
+  }
+
+  return "Good Night";
+}
 
 export default function Cards() {
+  const user = getUser();
+  const greetings = getGreeting();
+
+  const pendingDeals = deals.filter((deal) => deal.status === "Pending");
+
+  const activeDeals = deals.filter((deal) => deal.status === "Active");
+
+  const completedDeals = deals.filter((deal) => deal.status === "Completed");
+
   return (
     <>
       <div className="relative px-8 py-8">
@@ -17,7 +41,7 @@ export default function Cards() {
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold text-text">
-                  Good Afternoon, Sylvester
+                  {greetings}, {user?.firstName || "User"}
                 </h1>
                 <span className="bg-secondary/20 text-secondary text-xs px-3 py-1 rounded-full font-medium">
                   Verified
@@ -55,7 +79,9 @@ export default function Cards() {
           <CardContent>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-4xl font-bold text-text">0</p>
+                <p className="text-4xl font-bold text-text">
+                  {pendingDeals.length ?? 0}
+                </p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-xs text-text/40">Needs attention</span>
                   <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
@@ -81,7 +107,9 @@ export default function Cards() {
           <CardContent>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-4xl font-bold text-text">0</p>
+                <p className="text-4xl font-bold text-text">
+                  {activeDeals.length ?? 0}
+                </p>
                 <div className="flex items-center gap-2 mt-2">
                   <TrendingUp className="w-3 h-3 text-secondary" />
                   <span className="text-xs text-text/40">0% growth</span>
@@ -105,7 +133,9 @@ export default function Cards() {
           <CardContent>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-4xl font-bold text-text">0</p>
+                <p className="text-4xl font-bold text-text">
+                  {completedDeals.length ?? 0}
+                </p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-xs text-text/40">Success rate</span>
                   <span className="text-xs font-bold text-secondary">0%</span>

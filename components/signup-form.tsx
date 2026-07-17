@@ -21,15 +21,15 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  AlertCircle,
-  CheckCircle2,
 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface UserData {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   createdAt: string;
@@ -43,10 +43,10 @@ export function SignupForm({
 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
   });
@@ -57,38 +57,41 @@ export function SignupForm({
       ...prev,
       [id]: value,
     }));
-    // Clear errors when user types
-    setError("");
   };
 
   //Use Zod Later on
   const validateForm = (): boolean => {
     // Check if all fields are filled
-    if (!formData.name.trim()) {
-      setError("Full name is required");
+    if (!formData.firstName.trim()) {
+      toast.warning("First name is required", { position: "top-center" });
+      return false;
+    }
+
+    if (!formData.lastName.trim()) {
+      toast.warning("Last name is required", { position: "top-center" });
       return false;
     }
 
     if (!formData.email.trim()) {
-      setError("Email is required");
+      toast.warning("Email is required", { position: "top-center" });
       return false;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address");
+      toast.warning("Please enter a valid email address", { position: "top-center" });
       return false;
     }
 
     if (!formData.password) {
-      setError("Password is required");
+      toast.warning("Password is required", { position: "top-center" });
       return false;
     }
 
     // Validate password length
     if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters long");
+      toast.warning("Password must be at least 8 characters long", { position: "top-center" });
       return false;
     }
 
@@ -97,7 +100,6 @@ export function SignupForm({
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
-    setError("");
     setSuccess(false);
 
     // Validate form
@@ -119,7 +121,7 @@ export function SignupForm({
         );
 
         if (userExists) {
-          setError("An account with this email already exists");
+          toast.error("An account with this email already exists", { position: "top-center" });
           setIsLoading(false);
           return;
         }
@@ -127,7 +129,8 @@ export function SignupForm({
         // Create new user
         const newUser: UserData = {
           id: Date.now().toString(),
-          name: formData.name,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
           email: formData.email,
           password: formData.password, // In production, this should be hashed!
           createdAt: new Date().toISOString(),
@@ -145,8 +148,10 @@ export function SignupForm({
         );
 
         setSuccess(true);
+        toast.success("Account created successfully! Redirecting...", { position: "top-center" });
         setFormData({
-          name: "",
+          firstName: "",
+          lastName: "",
           email: "",
           password: "",
         });
@@ -156,7 +161,7 @@ export function SignupForm({
           router.push("/");
         }, 1500);
       } catch (err) {
-        setError("An error occurred during signup. Please try again.");
+        toast.error("An error occurred during signup. Please try again."), { position: "top-center" };
         console.error("Signup error:", err);
       } finally {
         setIsLoading(false);
@@ -181,30 +186,19 @@ export function SignupForm({
         <CardContent>
           <form onSubmit={handleSubmit}>
             <FieldGroup className="gap-5">
-              {error && (
-                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-              {success && (
-                <div className="flex items-center gap-2 rounded-lg bg-primary/10 p-3 text-sm text-primary border border-primary/20">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span>Account created successfully! Redirecting...</span>
-                </div>
-              )}
               {/* Full Name */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="name" className="text-sm font-medium">
-                  Full Name
+                  First Name
                 </FieldLabel>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
                   <Input
-                    id="name"
+                    id="firstName"
                     type="text"
-                    placeholder="John Doe"
-                    value={formData.name}
+                    placeholder="John"
+                    value={formData.firstName}
                     onChange={handleChange}
                     required
                     disabled={isLoading || success}
@@ -212,6 +206,25 @@ export function SignupForm({
                   />
                 </div>
               </Field>
+              <Field>
+                <FieldLabel htmlFor="name" className="text-sm font-medium">
+                  Last Name
+                </FieldLabel>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+                  <Input
+                    id="lastName"
+                    type="text"
+                    placeholder="Doe"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    required
+                    disabled={isLoading || success}
+                    className="h-11 pl-9 text-base"
+                  />
+                </div>
+              </Field>
+              </div>
 
               {/* Email */}
               <Field>
