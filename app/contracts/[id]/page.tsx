@@ -125,7 +125,7 @@ export default async function ContractPage({
             <div className="space-y-3 flex-1">
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-3xl font-bold tracking-tight">
-                  {contract.name}
+                  {contract.title}
                 </h1>
                 <Badge
                   className={cn(
@@ -248,7 +248,7 @@ export default async function ContractPage({
               <CardHeader className="border-b border-primary/10 bg-linear-to-r from-primary/5 to-secondary/5 py-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-xl">{contract.name}</CardTitle>
+                    <CardTitle className="text-xl">{contract.title}</CardTitle>
                     <CardDescription className="text-sm mt-1">
                       Contract ID: #{contract.id} • Version{" "}
                       {contract.version || "1.0"}
@@ -398,7 +398,7 @@ export default async function ContractPage({
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="text-sm font-medium">
-                            {contract.name} - Final Draft
+                            {contract.title} - Final Draft
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {contract.pages || 12} pages •{" "}
