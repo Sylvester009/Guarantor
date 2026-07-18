@@ -1,8 +1,9 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { deals } from "@/data/deals";
-import { getUser } from "@/services/user";
+import { Deal } from "@/data/deals";
+import { UserProps } from "@/data/user";
+import { getUserDeals } from "@/services/deal";
 import { Award, CheckCircle, Clock, Target, TrendingUp } from "lucide-react";
 
 function getGreeting() {
@@ -23,15 +24,19 @@ function getGreeting() {
   return "Good Night";
 }
 
-export default function Cards() {
-  const user = getUser();
+export default function Cards({ user }: UserProps) {
+  const deals = user ? getUserDeals(user?.id) : [];
   const greetings = getGreeting();
 
-  const pendingDeals = deals.filter((deal) => deal.status === "Pending");
+  const pendingDeals = deals.filter((deal: Deal) => deal.status === "Pending");
 
-  const activeDeals = deals.filter((deal) => deal.status === "Active");
+  const activeDeals = deals.filter((deal: Deal) => deal.status === "Active");
 
-  const completedDeals = deals.filter((deal) => deal.status === "Completed");
+  const completedDeals = deals.filter(
+    (deal: Deal) => deal.status === "Completed",
+  );
+
+  const trustScore = (completedDeals.length / deals.length) * 100;
 
   return (
     <>
@@ -44,9 +49,9 @@ export default function Cards() {
                   {greetings}, {user?.firstName || "User"}
                 </h1>
                 <span
-                  className={`text-xs px-3 py-1 rounded-full font-medium ${user.length <= 0 ? "bg-accent/20 text-accent" : "bg-secondary/20 text-secondary"}`}
+                  className={`text-xs px-3 py-1 rounded-full font-medium ${!user ? "bg-accent/20 text-accent" : "bg-secondary/20 text-secondary"}`}
                 >
-                  {user.length <= 0 ? "Unverified" : "Verified"}
+                  {!user ? "Unverified" : "Verified"}
                 </span>
               </div>
               <p className="text-text/60 flex items-center gap-2">
@@ -54,7 +59,7 @@ export default function Cards() {
                 <span className="w-1 h-1 bg-text/20 rounded-full"></span>
                 <span className="flex items-center gap-1">
                   <Award className="w-3 h-3 text-accent" />
-                  <span className="text-sm">Trust Score: 100%</span>
+                  <span className="text-sm">Trust Score: {trustScore}%</span>
                 </span>
               </p>
             </div>

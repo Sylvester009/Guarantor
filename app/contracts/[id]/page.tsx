@@ -1,4 +1,6 @@
-import { deals } from "@/data/deals";
+"use client";
+
+import { Deal } from "@/data/deals";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Calendar,
   Clock,
-  FileText,
   Download,
   MessageCircle,
   ArrowRight,
@@ -19,37 +20,48 @@ import {
   AlertCircle,
   Building2,
   User,
-  Shield,
-  Sparkles,
   Users,
   Edit,
-  Eye,
-  Printer,
-  Share2,
+  ArrowLeft,
 } from "lucide-react";
 import { format } from "date-fns";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { getUserDeals } from "@/services/deal";
+import { getUser } from "@/services/user";
+import { useRouter } from "next/navigation";
+import { use } from "react";
+import Header from "@/component/header";
 
-export default async function ContractPage({
+export default function ContractPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const contract = deals.find((deal) => deal.id === id);
+  const router = useRouter();
+  const { id } = use(params);
+
+  const user = getUser();
+
+  if (!user) {
+    router.push("/login");
+    return null;
+  }
+
+  const deals = getUserDeals(user.id);
+
+  const contract = deals.find((deal: Deal) => deal.id === id);
 
   if (!contract) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
-        <AlertCircle className="h-12 w-12 text-muted-foreground" />
+        <AlertCircle className="h-12 w-12 text-text" />
         <h2 className="text-2xl font-semibold">Contract not found</h2>
-        <p className="text-muted-foreground">
+        <p className="text-text">
           The contract you're looking for doesn't exist or has been removed.
         </p>
         <Button variant="outline">
-          <Link href="/dashboard">Return to Dashboard</Link>
+          <Link href="/">Return to Dashboard</Link>
         </Button>
       </div>
     );
@@ -96,29 +108,15 @@ export default async function ContractPage({
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between w-full bg-background/70 backdrop-blur-md px-8 py-3 border-b border-primary/20 shadow-sm sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-linear-to-br from-primary to-secondary rounded-full flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <h1 className="text-primary font-bold text-2xl tracking-tight">
-            Guarantor
-          </h1>
-        </div>
-
-        <Avatar className="ring-2 ring-primary/20 ring-offset-2 ring-offset-background hover:ring-primary/40 transition-all cursor-pointer">
-          <AvatarImage
-            src="https://github.com/shadcn.png"
-            alt="@shadcn"
-            className="grayscale"
-          />
-          <AvatarFallback className="bg-primary/10 text-primary">
-            CN
-          </AvatarFallback>
-        </Avatar>
-      </header>
-
-      <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
+      <Header user={user} />
+      <div className="container mx-auto max-w-7xl px-4 py-8 md:pt-6 md:pb-10">
+        <Button
+          variant="outline"
+          className="border-0 my-2 pl-0 hover:text-primary"
+        >
+          <ArrowLeft className="h-4 w-4 hover:text-primary/40" />
+          <Link href="/">Return to Dashboard</Link>
+        </Button>
         {/* Contract Header */}
         <div className="mb-8">
           <div className="flex items-start justify-between gap-4">
@@ -141,10 +139,7 @@ export default async function ContractPage({
               </p>
             </div>
             <Button className="flex gap-2 py-4 bg-linear-to-r from-primary/60 to-secondary/60 shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/30 shrink-0">
-              <Link
-                href={`/deal-room`}
-                className="flex items-center gap-2"
-              >
+              <Link href={`/deal-room`} className="flex items-center gap-2">
                 <MessageCircle className="h-4 w-4" />
                 Open Deal Room
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -212,7 +207,10 @@ export default async function ContractPage({
                     {deadline}
                   </p>
                   {isOverdue && (
-                    <Badge variant="destructive" className="text-[10px] bg-error/40">
+                    <Badge
+                      variant="destructive"
+                      className="text-[10px] bg-error/40"
+                    >
                       Overdue
                     </Badge>
                   )}
@@ -237,7 +235,6 @@ export default async function ContractPage({
           </div>
           <div className="flex items-center gap-2 text-sm text-text">
             <span>Last updated: {format(new Date(), "MMM d, yyyy")}</span>
-           
           </div>
         </div>
 

@@ -10,9 +10,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Deal, deals } from "@/data/deals";
-import { AlertCircle, CheckCircle, Clock, MoreVertical } from "lucide-react";
+import { Deal } from "@/data/deals";
+import { UserProps } from "@/data/user";
+import { getUserDeals } from "@/services/deal";
+import {
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  FileText,
+  MoreVertical,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const getStatusConfig = (status: string) => {
   switch (status) {
@@ -43,8 +52,19 @@ const getStatusConfig = (status: string) => {
   }
 };
 
-export default function Tables() {
+export default function Tables({ user }: UserProps) {
   const router = useRouter();
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [deals, setDeals] = useState<Deal[]>([]);
+
+  useEffect(() => {
+
+    const userDeals = user ? getUserDeals(user?.id) : [];
+    setDeals(userDeals);
+    setIsLoading(false);
+  }, []);
+
   return (
     <section className="p-8">
       <div className="flex items-center justify-between mb-6">
@@ -60,7 +80,7 @@ export default function Tables() {
           <TableHeader className="bg-background/50">
             <TableRow className="hover:bg-transparent border-primary/5">
               <TableHead className="font-semibold hover:text-primary transition-colors">
-                Name
+                Title
               </TableHead>
               <TableHead className="font-semibold hover:text-primary transition-colors">
                 Description
@@ -76,51 +96,84 @@ export default function Tables() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {deals.map((deal: Deal) => {
-              const statusConfig = getStatusConfig(deal.status);
-              const StatusIcon = statusConfig.icon;
-              return (
-                <TableRow
-                  key={deal.id}
-                  className="hover:bg-primary/5 transition-colors border-primary/5 cursor-auto"
-                  onClick={() => router.push(`/contracts/${deal.id}`)}
+            {isLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="h-40 text-center text-text/60"
                 >
-                  <TableCell className="font-medium text-text">
-                    {deal.title}
-                  </TableCell>
+                  Loading deals...
+                </TableCell>
+              </TableRow>
+            ) : deals.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="h-40 text-center text-text/60"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <FileText className="h-10 w-10 text-text/20" />
+                    <div>
+                      <p className="font-medium text-text">No deals yet</p>
+                      <p className="text-sm text-text/50">
+                        Create your first deal to get started.
+                      </p>
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              deals.map((deal: Deal) => {
+                const statusConfig = getStatusConfig(deal.status);
+                const StatusIcon = statusConfig.icon;
 
-                  <TableCell className="text-text/70 max-w-xs truncate">
-                    {deal.description}
-                  </TableCell>
-                  <TableCell className="text-text/70 max-w-xs truncate">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-3 h-3 text-text/30" />
-                      {deal.createdAt}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-text/70">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-3 h-3 text-text/30" />
-                      {deal.deadline}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge
-                      variant="outline"
-                      className={`${statusConfig.color} border font-medium gap-1.5 px-3 py-1`}
-                    >
-                      <StatusIcon className="w-3 h-3" />
-                      {statusConfig.label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="w-4 h-4 text-text/40" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                return (
+                  <TableRow
+                    key={deal.id}
+                    className="hover:bg-primary/5 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/contracts/${deal.id}`)}
+                  >
+                    <TableCell className="font-medium text-text">
+                      {deal.title}
+                    </TableCell>
+
+                    <TableCell className="max-w-xs truncate text-text/70">
+                      {deal.description}
+                    </TableCell>
+
+                    <TableCell className="text-text/70">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-3 w-3 text-text/30" />
+                        {new Date(deal.createdAt).toLocaleDateString("en-CA")}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="text-text/70">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-3 w-3 text-text/30" />
+                        {deal.deadline}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      <Badge
+                        variant="outline"
+                        className={`${statusConfig.color} border px-3 py-1 font-medium gap-1.5`}
+                      >
+                        <StatusIcon className="h-3 w-3" />
+                        {statusConfig.label}
+                      </Badge>
+                    </TableCell>
+
+                    <TableCell>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4 text-text/40" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </div>

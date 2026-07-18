@@ -279,11 +279,10 @@ export default function DealRoom() {
           <div className="rounded-lg bg-linear-to-br from-primary to-secondary p-2">
             <FileText className="h-5 w-5 text-white" />
           </div>
-          <div>
-            <h3 className="font-semibold">AI Contract Generator</h3>
-            <p className="text-xs text-muted-foreground">
-              Powered by advanced AI
-            </p>
+          <div className="flex items-center p-1">
+            <h1 className="text-primary font-bold text-2xl tracking-tight">
+              Guarantor
+            </h1>
           </div>
         </div>
 
@@ -324,7 +323,7 @@ export default function DealRoom() {
               </Button>
               <Button variant="outline" className="w-[85%] mr-auto gap-2">
                 <FileText className="h-4 w-4" />
-                Export Contract
+                Head to Contract Page
               </Button>
             </CardContent>
           </Card>

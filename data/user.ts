@@ -7,6 +7,10 @@ export interface UserData {
     createdAt: string;
 }
 
+export interface UserProps {
+  user: UserData | null;
+}
+
 export const user: UserData = {
     id: "1784277965206",
     firstName: "Sylvester",
