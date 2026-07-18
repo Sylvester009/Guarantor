@@ -59,7 +59,7 @@ export default function Cards({ user }: UserProps) {
                 <span className="w-1 h-1 bg-text/20 rounded-full"></span>
                 <span className="flex items-center gap-1">
                   <Award className="w-3 h-3 text-accent" />
-                  <span className="text-sm">Trust Score: {trustScore}%</span>
+                  <span className="text-sm">Trust Score: {trustScore || 0}%</span>
                 </span>
               </p>
             </div>
