@@ -6,13 +6,34 @@ import { Bell, Plus, Search, Sparkles } from "lucide-react";
 
 import { useState } from "react";
 import DealModal from "./deal-modal";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { UserProps } from "@/data/user";
+import { dealsInviteResponse, getDealsInvite } from "@/services/deal";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Deal } from "@/data/deals";
+import { toast } from "sonner";
 
 export default function Header({ user }: UserProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const dealInvites = user ? getDealsInvite(user?.email) : [];
 
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
+
+  const handleAccept = () => {
+    dealsInviteResponse(user?.email || "", user?.id || "", "Accepted");
+    toast.success("Deal accepted successfully!");
+  };
+
+  const handleDecline = () => {
+    dealsInviteResponse(user?.email || "", "", "Declined");
+
+    toast.success("Deal declined successfully!");
+  };
 
   return (
     <>
@@ -46,20 +67,92 @@ export default function Header({ user }: UserProps) {
                 <span className="hidden sm:inline">Initiate a Deal</span>
               </Button>
 
-              <div className="relative">
-                <Bell className="text-text/60 hover:text-primary transition-colors cursor-pointer w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-error text-white text-[10px] rounded-full flex items-center justify-center">
-                  3
-                </span>
-              </div>
+              <Popover>
+                <PopoverTrigger
+                  render={
+                    <button type="button" className="relative cursor-pointer">
+                      <Bell className="text-text/60 hover:text-primary transition-colors cursor-pointer w-5 h-5" />
+                      {dealInvites.length > 0 && (
+                        <span className="absolute -top-2 -right-1 min-w-4 h-4 px-1 bg-error text-white text-[10px] rounded-full flex items-center justify-center">
+                          {dealInvites.length}
+                        </span>
+                      )}
+                    </button>
+                  }
+                />
+                <PopoverContent
+                  align="end"
+                  className="w-100 mt-6 bg-background border border-primary/90 shadow-md p-0"
+                >
+                  <div className="max-h-96 overflow-y-auto">
+                    {dealInvites.length === 0 ? (
+                      <div className="flex items-center justify-center py-10">
+                        <p className="text-text font-semibold">
+                          No Notifications...
+                        </p>
+                      </div>
+                    ) : (
+                      dealInvites.map((invite: Deal) => (
+                        <div
+                          key={invite.id}
+                          className="p-4 border-b border-border hover:bg-primary/5 transition"
+                        >
+                          <div className="flex gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Bell className="w-4 h-4 text-primary" />
+                            </div>
+
+                            <div className="flex-1">
+                              <p className="text-sm">
+                                <span className="font-semibold text-primary">
+                                  {invite.creator}
+                                </span>{" "}
+                                invited you to collaborate on a deal.
+                              </p>
+
+                              <h4 className="font-semibold mt-1">
+                                {invite.title}
+                              </h4>
+
+                              <p className="text-xs text-text/70 mt-1 line-clamp-2">
+                                {invite.description}
+                              </p>
+
+                              {/* Action Buttons */}
+                              <div className="flex gap-2 mt-4">
+                                <button
+                                  onClick={() => handleAccept()}
+                                  className="flex-1 bg-primary text-white text-sm py-2 rounded-md hover:bg-primary/90 transition"
+                                >
+                                  Accept
+                                </button>
+
+                                <button
+                                  onClick={() => handleDecline()}
+                                  className="flex-1 border border-error text-error text-sm py-2 rounded-md hover:bg-error hover:text-white transition"
+                                >
+                                  Decline
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </>
           )}
 
-          <Avatar className="ring-2 ring-primary/20 ring-offset-2 ring-offset-background hover:ring-primary/40 transition-all cursor-pointer">
+          <Avatar
+            onClick={() => router.push("/login")}
+            className="ring-2 ring-primary/20 ring-offset-2 ring-offset-background hover:ring-primary/40 transition-all cursor-pointer"
+          >
             <AvatarFallback className="bg-primary/10 text-primary">
-              {user?.firstName?.charAt(0)?.toUpperCase() ?? "U"}
+              {user?.firstName?.charAt(0)?.toUpperCase() ?? "G"}
               {""}
-              {user?.lastName?.charAt(0)?.toUpperCase() ?? "S"}
+              {user?.lastName?.charAt(0)?.toUpperCase() ?? "U"}
             </AvatarFallback>
           </Avatar>
         </div>

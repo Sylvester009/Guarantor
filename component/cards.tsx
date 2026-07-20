@@ -46,7 +46,7 @@ export default function Cards({ user }: UserProps) {
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold text-text">
-                  {greetings}, {user?.firstName || "User"}
+                  {greetings}, {user?.firstName || "Guest"}
                 </h1>
                 <span
                   className={`text-xs px-3 py-1 rounded-full font-medium ${!user ? "bg-accent/20 text-accent" : "bg-secondary/20 text-secondary"}`}

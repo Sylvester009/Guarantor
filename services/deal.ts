@@ -42,6 +42,8 @@ export const createDeal = ({
             createdAt: new Date().toISOString(),
             status: "Pending",
             counterparty: counterparty || "Not Assigned",
+            counterpartyId: "",
+            inviteStatus: "Pending",
             terms: "",
             participants: 1,
             updates: 0,
@@ -73,9 +75,67 @@ export const createDeal = ({
 export const getUserDeals = (userId: string) => {
     try {
         const deals = JSON.parse(localStorage.getItem("deals") || "[]");
-        return deals.filter((deal: Deal) => deal.userId === userId);
+        return deals.filter((deal: Deal) => deal.userId === userId || deal.counterpartyId === userId);
     } catch (err) {
         console.error("Error getting user deals:", err);
+        return [];
+    }
+};
+
+export const getDealsInvite = (counterparty: string) => {
+    try {
+        const deals = JSON.parse(localStorage.getItem("deals") || "[]");
+        return deals.filter((deal: Deal) => deal.counterparty === counterparty &&
+            deal.inviteStatus === "Pending");
+    } catch (err) {
+        console.error("Error getting user deals invites:", err);
+        return [];
+    }
+};
+
+export const dealsInviteResponse = (
+    counterparty: string,
+    counterpartyId: string,
+    inviteStatus: "Accepted" | "Declined"
+) => {
+    try {
+        const deals: Deal[] = JSON.parse(
+            localStorage.getItem("deals") || "[]"
+        );
+
+        const updatedDeals = deals.map((deal) => {
+            if (
+                deal.counterparty === counterparty &&
+                deal.inviteStatus === "Pending"
+            ) {
+                if (inviteStatus === "Accepted") {
+                    return {
+                        ...deal,
+                        counterpartyId:
+                            inviteStatus === "Accepted"
+                                ? counterpartyId
+                                : "",
+                        inviteStatus: "accepted",
+                    };
+                }
+
+                if (inviteStatus === "Declined") {
+                    return {
+                        ...deal,
+                        counterpartyId: "",
+                        inviteStatus: "declined",
+                    };
+                }
+            }
+
+            return deal;
+        });
+
+        localStorage.setItem("deals", JSON.stringify(updatedDeals));
+
+        return updatedDeals;
+    } catch (err) {
+        console.error("Error changing deals invites status:", err);
         return [];
     }
 };
