@@ -26,14 +26,24 @@ import {
   CheckCircle,
   PenTool,
   Layers,
+  MessageSquare,
 } from "lucide-react";
-import { use, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { getUserDeals } from "@/services/deal";
 import { Deal } from "@/data/deals";
 import { getUser } from "@/services/user";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { messages } from "@/data/messages";
+import { Message, messages } from "@/data/messages";
+import { getMessagesByDealId, saveMessage } from "@/services/message";
+import { toast } from "sonner";
+
+interface MessageFormData {
+  dealId: string;
+  senderId: string;
+  senderName?: string;
+  content: string;
+}
 
 export default function DealRoom({
   params,
@@ -42,6 +52,16 @@ export default function DealRoom({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [formData, setFormData] = useState<MessageFormData>({
+    dealId: "",
+    senderId: "",
+    senderName: "",
+    content: "",
+  });
+
   const user = getUser();
 
   if (!user) {
@@ -53,19 +73,108 @@ export default function DealRoom({
 
   const contract = deals.find((deal: Deal) => deal.id === id);
 
-  const handleSendMessage = (e: React.FormEvent) => {};
+  const [roomMessages, setRoomMessages] = useState<Message[]>([]);
+
+  useEffect(() => {
+    if (contract?.id) {
+      const messages = getMessagesByDealId(contract.id);
+      setRoomMessages(messages);
+    }
+  }, [contract?.id]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [roomMessages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleChange = (e: any) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
+
+  const handleSendMessage = (e: any) => {
+    e.preventDefault();
+
+    if (!formData.content.trim()) {
+      toast.error("Please enter a message");
+      return;
+    }
+
+    if (!contract?.id) {
+      toast.error("No active contract");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    let userName = `${user.firstName} ${user.lastName}`;
+
+    const result = saveMessage({
+      dealId: contract?.id,
+      senderId: user?.id,
+      senderName: userName,
+      content: formData.content,
+    });
+
+    if (!result.success) {
+      toast.error(result.message, {
+        position: "top-center",
+      });
+      setIsSubmitting(false);
+      return;
+    } else {
+      toast.success(result.message, {
+        position: "top-center",
+      });
+
+      const newMessage: Message = {
+        id: Date.now().toString(), // Temporary ID
+        dealId: contract.id,
+        senderId: user.id,
+        senderName: userName,
+        content: formData.content,
+        status: "sent",
+        createdAt: new Date().toISOString(),
+      };
+
+      setRoomMessages((prev) => [...prev, newMessage]);
+
+      setFormData({
+        dealId: "",
+        senderId: "",
+        senderName: "",
+        content: "",
+      });
+
+      setIsSubmitting(false);
+
+      setTimeout(scrollToBottom, 100);
+    }
+  };
 
   const handleAIGenerate = () => {};
 
   return (
     <div className="flex h-screen bg-background">
       {/* Main Chat Area */}
-      <div className="flex flex-1 flex-col border-r">
+      <div className="flex flex-1 flex-col border-r border-primary/20">
         {/* Chat Header */}
         <div className="flex items-center justify-between border-b border-primary backdrop-blur-2xl shadow-xl bg-background/50 px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-primary to-secondary">
-              <Users className="h-5 w-5 text-white" />
+              <Avatar className="ring-2 ring-primary/20 ring-offset-2 ring-offset-background hover:ring-primary/40 transition-all cursor-pointer">
+                <AvatarFallback className="bg-primary/10 text-white">
+                  {user?.firstName?.charAt(0)?.toUpperCase() ?? "G"}
+                  {""}
+                  {user?.lastName?.charAt(0)?.toUpperCase() ?? "U"}
+                </AvatarFallback>
+              </Avatar>
             </div>
             <div>
               <h2 className="font-semibold">{contract?.title}</h2>
@@ -86,65 +195,98 @@ export default function DealRoom({
 
         {/* Messages */}
 
-        <div className="flex flex-col gap-3 overflow-y-auto p-6">
-          {messages.map((message) => {
-            const isOwn = message.senderId === "current-user";
-
-            return (
-              <div
-                key={message.id}
-                className={`
-          border-2 rounded-lg p-3 my-2.5 overflow-hidden
-          ${
-            isOwn
-              ? "border-primary/30 bg-primary/20"
-              : "border-primary/30 bg-primary/10"
-          }
-          ${isOwn ? "ml-auto" : ""}
-          max-w-[70%]
-        `}
-                style={{
-                  // Clear floats
-                  clear: "both",
-                }}
-              >
-                {/* Avatar - floated left or right */}
-                <Avatar
-                  className={`
-            flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-medium
-            ${isOwn ? "float-right ml-5 mr-0" : "float-left mr-5"}
-          `}
-                >
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {user?.firstName?.charAt(0)?.toUpperCase() ?? "G"}
-                    {user?.lastName?.charAt(0)?.toUpperCase() ?? "U"}
-                  </AvatarFallback>
-                </Avatar>
-
-                {/* Message Content */}
-                <div className="overflow-hidden">
-                  <p className="text-sm text-text">{message.content}</p>
-                  <span
-                    className={`
-            text-xs
-            ${isOwn ? "text-text float-right" : "text-text/40 float-left"}
-          `}
-                  >
-                    {new Date(message.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {roomMessages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="rounded-full bg-primary/10 p-4 mb-4">
+                <MessageSquare className="h-10 w-10 text-primary/60" />
               </div>
-            );
-          })}
+              <h3 className="text-lg font-semibold text-text mb-1">
+                Welcome to the Deal Room
+              </h3>
+              <p className="text-sm text-text/90 max-w-sm">
+                No messages yet. Start the conversation by sending a message
+                below.
+              </p>
+              <div className="flex items-center gap-2 mt-3">
+                <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
+                <span className="text-xs text-text/70">
+                  {contract?.participants || 0} participants online
+                </span>
+              </div>
+            </div>
+          ) : (
+            roomMessages.map((message: Message) => {
+              const isOwn = message.senderId === user?.id;
+
+              return (
+                <div
+                  key={message.id}
+                  className={`
+                  border-2 rounded-lg p-3 my-2.5 overflow-hidden
+                  ${
+                    isOwn
+                      ? "border-primary/30 bg-primary/20 ml-auto"
+                      : "border-primary/30 bg-primary/10"
+                  }
+                  max-w-[70%]
+                `}
+                  style={{
+                    clear: "both",
+                  }}
+                >
+                  <Avatar
+                    className={`
+                    flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-medium
+                    ${isOwn ? "float-right ml-5 mr-0" : "float-left mr-5"}
+                  `}
+                  >
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {isOwn
+                        ? (user?.firstName?.charAt(0)?.toUpperCase() ?? "U")
+                        : (message.senderName?.charAt(0)?.toUpperCase() ?? "U")}
+                      {isOwn
+                        ? (user?.lastName?.charAt(0)?.toUpperCase() ?? "U")
+                        : (message.senderName
+                            ?.split(" ")[1]
+                            ?.charAt(0)
+                            ?.toUpperCase() ?? "")}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  {/* Message Content */}
+                  <div className="overflow-hidden">
+                    {/* Sender name - show for other users */}
+                    {!isOwn && (
+                      <p className="text-xs font-medium text-primary/70 mb-1">
+                        {message.senderName}
+                      </p>
+                    )}
+                    <p className="text-sm text-text">{message.content}</p>
+                    <span
+                      className={`
+                      text-xs block mt-1
+                      ${isOwn ? "text-text float-right" : "text-text/40 float-left"}
+                    `}
+                    >
+                      {new Date(message.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
+          <div ref={messagesEndRef} />
         </div>
+
         {/* Message Input */}
-        <div className="border-t border-primary/10 bg-card/50 p-4 pb-0">
+        <div className="border-t border-primary/10 bg-background/50 p-4 shrink-0">
           <form
             onSubmit={handleSendMessage}
-            className="flex gap-3 items-center mt-4"
+            className="flex gap-3 items-center"
           >
             <div className="relative flex-1">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50">
@@ -152,7 +294,12 @@ export default function DealRoom({
               </div>
 
               <Input
+                id="content"
+                type="text"
                 placeholder="Write a message..."
+                value={formData.content}
+                onChange={handleChange}
+                disabled={isSubmitting}
                 className="w-full rounded-full border border-primary/10 bg-background/50 pl-10 pr-4 py-6 text-sm shadow-sm focus:border-primary/30 focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all duration-200"
               />
             </div>
@@ -160,10 +307,14 @@ export default function DealRoom({
             <Button
               type="submit"
               size="icon"
-              className="
-        rounded-full transition-all duration-300 bg-linear-to-br from-primary to-primary/80 hover:shadow-lg hover:shadow-primary/30 h-11 w-11 shrink-0"
+              disabled={isSubmitting || !formData.content.trim()}
+              className="rounded-full transition-all duration-300 bg-linear-to-br from-primary to-primary/80 hover:shadow-lg hover:shadow-primary/30 h-11 w-11 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Send className="h-4 w-4 transition-all duration-300 rotate-12" />
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 transition-all duration-300 rotate-12" />
+              )}
             </Button>
           </form>
         </div>
@@ -270,6 +421,7 @@ export default function DealRoom({
 
               <Button
                 variant="outline"
+                onClick={() => router.push(`/contracts/${contract.id}`)}
                 className=" flex items-center w-full gap-2 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all duration-300 group h-10"
               >
                 <FileText className="h-4 w-4 group-hover:text-primary transition-colors" />
