@@ -37,6 +37,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Message, messages } from "@/data/messages";
 import { getMessagesByDealId, saveMessage } from "@/services/message";
 import { toast } from "sonner";
+import { useSocket } from "@/hooks/useSocket";
 
 interface MessageFormData {
   dealId: string;
@@ -53,6 +54,8 @@ export default function DealRoom({
   const { id } = use(params);
   const router = useRouter();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState<MessageFormData>({
@@ -74,6 +77,9 @@ export default function DealRoom({
   const contract = deals.find((deal: Deal) => deal.id === id);
 
   const [roomMessages, setRoomMessages] = useState<Message[]>([]);
+  const { socket, isConnected, typingUsers, emitTyping } = useSocket(
+    contract?.id || "",
+  );
 
   useEffect(() => {
     if (contract?.id) {
@@ -81,6 +87,29 @@ export default function DealRoom({
       setRoomMessages(messages);
     }
   }, [contract?.id]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("room-messages", (messages: Message[]) => {
+      setRoomMessages(messages);
+    });
+
+    socket.on("chat message", (newMessage: Message) => {
+      setRoomMessages((prev) => {
+        // Check if message already exists to avoid duplicates
+        if (prev.some((msg) => msg.id === newMessage.id)) {
+          return prev;
+        }
+        return [...prev, newMessage];
+      });
+    });
+
+    return () => {
+      socket.off("room-messages");
+      socket.off("chat message");
+    };
+  }, [socket]);
 
   useEffect(() => {
     scrollToBottom();
@@ -96,6 +125,27 @@ export default function DealRoom({
       ...prev,
       [id]: value,
     }));
+
+    // Handle typing indicator
+    const userName = `${user.firstName} ${user.lastName}`;
+
+    if (!isTyping && value.trim()) {
+      setIsTyping(true);
+      emitTyping(true, userName);
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set new timeout to stop typing after 1.5 seconds of no input
+    typingTimeoutRef.current = setTimeout(() => {
+      if (isTyping) {
+        setIsTyping(false);
+        emitTyping(false, userName);
+      }
+    }, 1500);
   };
 
   const handleSendMessage = (e: any) => {
@@ -111,10 +161,37 @@ export default function DealRoom({
       return;
     }
 
+    const userName = `${user.firstName} ${user.lastName}`;
+    if (isTyping) {
+      setIsTyping(false);
+      emitTyping(false, userName);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    }
+
     setIsSubmitting(true);
 
-    let userName = `${user.firstName} ${user.lastName}`;
+    // Create message object
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      dealId: contract.id,
+      senderId: user.id,
+      senderName: userName,
+      content: formData.content,
+      status: "sent",
+      createdAt: new Date().toISOString(),
+    };
 
+    // Emit message via Socket.IO
+    if (socket && isConnected) {
+      socket.emit("chat message", {
+        dealId: contract.id,
+        message: newMessage,
+      });
+    }
+
+    // Save to database
     const result = saveMessage({
       dealId: contract?.id,
       senderId: user?.id,
@@ -128,35 +205,33 @@ export default function DealRoom({
       });
       setIsSubmitting(false);
       return;
-    } else {
-      toast.success(result.message, {
-        position: "top-center",
-      });
-
-      const newMessage: Message = {
-        id: Date.now().toString(), // Temporary ID
-        dealId: contract.id,
-        senderId: user.id,
-        senderName: userName,
-        content: formData.content,
-        status: "sent",
-        createdAt: new Date().toISOString(),
-      };
-
-      setRoomMessages((prev) => [...prev, newMessage]);
-
-      setFormData({
-        dealId: "",
-        senderId: "",
-        senderName: "",
-        content: "",
-      });
-
-      setIsSubmitting(false);
-
-      setTimeout(scrollToBottom, 100);
     }
+
+    // Add message to local state (it will also come via socket)
+    setRoomMessages((prev) => [...prev, newMessage]);
+
+    setFormData({
+      dealId: "",
+      senderId: "",
+      senderName: "",
+      content: "",
+    });
+
+    setIsSubmitting(false);
+    setTimeout(scrollToBottom, 100);
   };
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (isTyping && user) {
+        const userName = `${user.firstName} ${user.lastName}`;
+        emitTyping(false, userName);
+      }
+    };
+  }, []);
 
   const handleAIGenerate = () => {};
 
