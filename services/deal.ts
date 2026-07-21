@@ -96,7 +96,7 @@ export const getDealsInvite = (counterparty: string) => {
 export const dealsInviteResponse = (
     counterparty: string,
     counterpartyId: string,
-    inviteStatus: "Accepted" | "Declined"
+    inviteStatus: "Accepted" | "Declined",
 ) => {
     try {
         const deals: Deal[] = JSON.parse(
@@ -109,13 +109,15 @@ export const dealsInviteResponse = (
                 deal.inviteStatus === "Pending"
             ) {
                 if (inviteStatus === "Accepted") {
+                    const currentParticipants = deal.participants || 0;
                     return {
                         ...deal,
                         counterpartyId:
                             inviteStatus === "Accepted"
                                 ? counterpartyId
                                 : "",
-                        inviteStatus: "accepted",
+                        inviteStatus: "Accepted",
+                        participants: currentParticipants + 1,
                     };
                 }
 
@@ -123,7 +125,8 @@ export const dealsInviteResponse = (
                     return {
                         ...deal,
                         counterpartyId: "",
-                        inviteStatus: "declined",
+                        inviteStatus: "Declined",
+                        participants: deal.participants || 0,
                     };
                 }
             }

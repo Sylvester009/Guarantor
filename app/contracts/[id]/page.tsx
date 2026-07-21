@@ -139,7 +139,7 @@ export default function ContractPage({
               </p>
             </div>
             <Button className="flex gap-2 py-4 bg-linear-to-r from-primary/60 to-secondary/60 shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/30 shrink-0">
-              <Link href={`/deal-room`} className="flex items-center gap-2">
+              <Link href={`/deal-room/${contract?.id}`} className="flex items-center gap-2">
                 <MessageCircle className="h-4 w-4" />
                 Open Deal Room
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
